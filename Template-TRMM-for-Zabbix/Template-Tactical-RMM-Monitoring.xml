@@ -1,0 +1,1151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2022-10-19T14:01:38Z</date>
+    <groups>
+        <group>
+            <name>Templates/Applications</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template Tactical RMM Monitoring</template>
+            <name>Template Tactical RMM Monitoring</name>
+            <description>Created Bernardo Lankheet&#13;
+&#13;
+Used to monitoting status to TacticalRMM.&#13;
+&#13;
+Readme on: https://github.com/bernardolankheet/TacticalRMM-Extras/Template-TRMM-for-Zabbix</description>
+            <groups>
+                <group>
+                    <name>Templates/Applications</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>component: application</name>
+                </application>
+                <application>
+                    <name>component: cert</name>
+                </application>
+                <application>
+                    <name>component: latestversion</name>
+                </application>
+                <application>
+                    <name>component: services</name>
+                </application>
+                <application>
+                    <name>component: so</name>
+                </application>
+                <application>
+                    <name>RawData</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>TRMM Agent Count</name>
+                    <type>DEPENDENT</type>
+                    <key>agent.count.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: application</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.agent_count</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>TRMM Agent Version</name>
+                    <type>DEPENDENT</type>
+                    <key>agent.version.trmm</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>component: application</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.latest_agent_version</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{last(#1)}&lt;&gt;{last(#2)} and {strlen()}&gt;0</expression>
+                            <name>TRMM: Agent Version has changed</name>
+                            <priority>INFO</priority>
+                            <description>Agent Tactical RMM version has changed. Ack to close.</description>
+                            <manual_close>YES</manual_close>
+                            <tags>
+                                <tag>
+                                    <tag>TRMM</tag>
+                                    <value>VERSION</value>
+                                </tag>
+                            </tags>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Clients Count</name>
+                    <type>DEPENDENT</type>
+                    <key>client.count.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: application</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.client_count</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>TRMM Day Cert Expire</name>
+                    <type>DEPENDENT</type>
+                    <key>days.cert.expire.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: cert</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.days_until_cert_expires</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}&lt;{$LLD_DAYS_EXPIRE}</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{last()}&gt;{$REC_LLD_DAYS_EXPIRE}</recovery_expression>
+                            <name>TRMM: Certificate SSL is expiring ({ITEM.LASVALUE}&lt;10)</name>
+                            <priority>INFO</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>TRMM: Expired SSL Certificate</name>
+                                    <expression>{Template Tactical RMM Monitoring:days.cert.status.trmm.last()}=1</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Cert Status</name>
+                    <type>DEPENDENT</type>
+                    <key>days.cert.status.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: cert</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Cert Expired Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.cert_expired</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}=1</expression>
+                            <name>TRMM: Expired SSL Certificate</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Disk Usage %</name>
+                    <type>DEPENDENT</type>
+                    <key>disk.usage.trmm</key>
+                    <delay>0</delay>
+                    <units>%</units>
+                    <applications>
+                        <application>
+                            <name>component: so</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.disk_usage_percent</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{min(30m)}&gt;={$HIGH_DISK_UTIL}</expression>
+                            <name>TRMM: Disk space is critically low</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                        <trigger>
+                            <expression>{min(30m)}&gt;={$LOW_DISK_UTIL}</expression>
+                            <name>TRMM: Disk space is low</name>
+                            <priority>INFO</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>TRMM: Disk space is critically low</name>
+                                    <expression>{Template Tactical RMM Monitoring:disk.usage.trmm.min(30m)}&gt;={$HIGH_DISK_UTIL}</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM: Latest Version</name>
+                    <type>DEPENDENT</type>
+                    <key>github.rmmagent.latestversion</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>component: latestversion</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.tag_name</params>
+                        </step>
+                        <step>
+                            <type>TRIM</type>
+                            <params>v</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmmagent.github</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{diff()}=1 and {strlen()}&gt;0</expression>
+                            <name>New version available of TRMM Agent</name>
+                            <opdata>New version: {Template Tactical RMM Monitoring:agent.version.trmm.last()}, installed version: {Template Tactical RMM Monitoring:github.rmmagent.latestversion.last()}</opdata>
+                            <priority>INFO</priority>
+                            <description>Ack to close.</description>
+                            <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM: Latest Version</name>
+                    <type>DEPENDENT</type>
+                    <key>github.trmm.latestversion</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>component: latestversion</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.tag_name</params>
+                        </step>
+                        <step>
+                            <type>TRIM</type>
+                            <params>v</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.github</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>TRMM Mem Usage %</name>
+                    <type>DEPENDENT</type>
+                    <key>mem.usage.trmm</key>
+                    <delay>0</delay>
+                    <units>%</units>
+                    <applications>
+                        <application>
+                            <name>component: so</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.mem_usage_percent</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}&gt;={$HIGH_MEMORY_UTIL}</expression>
+                            <name>TRMM: High memory utilization</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>RawData-TRMMGitHub</name>
+                    <type>HTTP_AGENT</type>
+                    <key>rawdata.rmm.github</key>
+                    <delay>5h</delay>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>RawData</name>
+                        </application>
+                    </applications>
+                    <timeout>30s</timeout>
+                    <url>https://api.github.com/repos/{$GITHUB_TRMM_USER_REPO}/releases/latest</url>
+                    <status_codes>200,404,304</status_codes>
+                    <headers>
+                        <header>
+                            <name>User-Agent</name>
+                            <value>Zabbix</value>
+                        </header>
+                    </headers>
+                </item>
+                <item>
+                    <name>RawData</name>
+                    <type>HTTP_AGENT</type>
+                    <key>rawdata.rmm.mon</key>
+                    <delay>5m</delay>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>RawData</name>
+                        </application>
+                    </applications>
+                    <timeout>30s</timeout>
+                    <url>{$HTTP}://{$RMM_API_URL}/core/status/</url>
+                    <posts>{&quot;auth&quot;: &quot;{$API_KEY}&quot;}</posts>
+                    <headers>
+                        <header>
+                            <name>Content-Type</name>
+                            <value>application/json</value>
+                        </header>
+                    </headers>
+                    <request_method>POST</request_method>
+                    <triggers>
+                        <trigger>
+                            <expression>{nodata({$TIME_API_DOWN})}=0</expression>
+                            <name>TRMM: API or WebService Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>RawData-RMMAgentGitHub</name>
+                    <type>HTTP_AGENT</type>
+                    <key>rawdata.rmmagent.github</key>
+                    <delay>5h</delay>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>RawData</name>
+                        </application>
+                    </applications>
+                    <timeout>30s</timeout>
+                    <url>https://api.github.com/repos/{$GITHUB_RMMAGENT_USER_REPO}/releases/latest</url>
+                    <status_codes>200,404,304</status_codes>
+                    <headers>
+                        <header>
+                            <name>User-Agent</name>
+                            <value>Zabbix</value>
+                        </header>
+                    </headers>
+                </item>
+                <item>
+                    <name>TRMM Service Celery</name>
+                    <type>DEPENDENT</type>
+                    <key>service.celery.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['celery']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Celery is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Celerybeat</name>
+                    <type>DEPENDENT</type>
+                    <key>service.celerybeat.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['celerybeat']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service CeleryBeat is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Daphne</name>
+                    <type>DEPENDENT</type>
+                    <key>service.daphne.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['daphne']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Daphne is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Django</name>
+                    <type>DEPENDENT</type>
+                    <key>service.django.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['django']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Django is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Mesh</name>
+                    <type>DEPENDENT</type>
+                    <key>service.mesh.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['mesh']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Mesh is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Mongo</name>
+                    <type>DEPENDENT</type>
+                    <key>service.mongo.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['mongo']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service MongoDB is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Nats-API</name>
+                    <type>DEPENDENT</type>
+                    <key>service.nats.api.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['nats-api']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service NATS-API is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Nats</name>
+                    <type>DEPENDENT</type>
+                    <key>service.nats.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['nats']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service NATSI is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Nginx</name>
+                    <type>DEPENDENT</type>
+                    <key>service.nginx.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['nginx']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Nginx is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Postgres</name>
+                    <type>DEPENDENT</type>
+                    <key>service.postgres.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['postgres']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Postgres is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Service Redis</name>
+                    <type>DEPENDENT</type>
+                    <key>service.redis.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: services</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>TRMM Service Status</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.services_running.['redis']</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>true
+0</params>
+                        </step>
+                        <step>
+                            <type>STR_REPLACE</type>
+                            <params>false
+1</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{max({$TIME_SERVICES_DOWN})}=1</expression>
+                            <name>TRMM: Service Redis is Down</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>TRMM Site Count</name>
+                    <type>DEPENDENT</type>
+                    <key>site.count.trmm</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>component: application</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.site_count</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>TRMM Version</name>
+                    <type>DEPENDENT</type>
+                    <key>version.trmm</key>
+                    <delay>0</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <applications>
+                        <application>
+                            <name>component: application</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.version</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>rawdata.rmm.mon</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{last(#1)}&lt;&gt;{last(#2)} and {strlen()}&gt;0</expression>
+                            <name>TRMM: Version has changed</name>
+                            <priority>INFO</priority>
+                            <description>Tactical RMM version has changed. Ack to close.</description>
+                            <manual_close>YES</manual_close>
+                            <tags>
+                                <tag>
+                                    <tag>TRMM</tag>
+                                    <value>VERSION</value>
+                                </tag>
+                            </tags>
+                        </trigger>
+                    </triggers>
+                </item>
+            </items>
+            <macros>
+                <macro>
+                    <macro>{$API_KEY}</macro>
+                    <type>SECRET_TEXT</type>
+                </macro>
+                <macro>
+                    <macro>{$GITHUB_RMMAGENT_USER_REPO}</macro>
+                    <value>amidaware/rmmagent</value>
+                </macro>
+                <macro>
+                    <macro>{$GITHUB_TRMM_USER_REPO}</macro>
+                    <value>amidaware/tacticalrmm</value>
+                </macro>
+                <macro>
+                    <macro>{$HIGH_DISK_UTIL}</macro>
+                    <value>96</value>
+                </macro>
+                <macro>
+                    <macro>{$HIGH_MEMORY_UTIL}</macro>
+                    <value>97</value>
+                </macro>
+                <macro>
+                    <macro>{$HTTP}</macro>
+                    <value>https</value>
+                </macro>
+                <macro>
+                    <macro>{$LLD_DAYS_EXPIRE}</macro>
+                    <value>10</value>
+                </macro>
+                <macro>
+                    <macro>{$LOW_DISK_UTIL}</macro>
+                    <value>93</value>
+                </macro>
+                <macro>
+                    <macro>{$REC_LLD_DAYS_EXPIRE}</macro>
+                    <value>30</value>
+                </macro>
+                <macro>
+                    <macro>{$RMM_API_URL}</macro>
+                    <value>api.tacticalrmm.com</value>
+                </macro>
+                <macro>
+                    <macro>{$TIME_API_DOWN}</macro>
+                    <value>10m</value>
+                </macro>
+                <macro>
+                    <macro>{$TIME_SERVICES_DOWN}</macro>
+                    <value>15m</value>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <triggers>
+        <trigger>
+            <expression>{Template Tactical RMM Monitoring:version.trmm.diff()}=1 and {Template Tactical RMM Monitoring:github.trmm.latestversion.strlen()}&gt;0</expression>
+            <name>New version available of TRMM</name>
+            <opdata>New version: {Template Tactical RMM Monitoring:version.trmm.last()}, installed version: {Template Tactical RMM Monitoring:github.trmm.latestversion.last()}</opdata>
+            <priority>INFO</priority>
+            <description>Ack to close.</description>
+            <manual_close>YES</manual_close>
+        </trigger>
+    </triggers>
+    <graphs>
+        <graph>
+            <name>Agent Count</name>
+            <graph_items>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>1A7C11</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>agent.count.trmm</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <name>Clients Count</name>
+            <graph_items>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>1A7C11</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>client.count.trmm</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <name>Disk-Mem Usage %</name>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>FIXED</ymax_type_1>
+            <graph_items>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>1A7C11</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>disk.usage.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>F63100</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>mem.usage.trmm</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <name>Services Status</name>
+            <yaxismax>2</yaxismax>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>FIXED</ymax_type_1>
+            <graph_items>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>1A7C11</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.celery.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>F63100</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.celerybeat.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>3</sortorder>
+                    <color>2774A4</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.daphne.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>4</sortorder>
+                    <color>A54F10</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.django.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>5</sortorder>
+                    <color>FC6EA3</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.mesh.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>6</sortorder>
+                    <color>6C59DC</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.mongo.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>7</sortorder>
+                    <color>AC8C14</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.nats.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>8</sortorder>
+                    <color>611F27</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.nats.api.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>9</sortorder>
+                    <color>F230E0</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.nginx.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>10</sortorder>
+                    <color>5CCD18</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.postgres.trmm</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>11</sortorder>
+                    <color>BB2A02</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>service.redis.trmm</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <name>Site Count</name>
+            <graph_items>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>1A7C11</color>
+                    <item>
+                        <host>Template Tactical RMM Monitoring</host>
+                        <key>site.count.trmm</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+    </graphs>
+    <value_maps>
+        <value_map>
+            <name>TRMM Cert Expired Status</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Expired</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+        <value_map>
+            <name>TRMM Service Status</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Running</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Stopped</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
+</zabbix_export>
