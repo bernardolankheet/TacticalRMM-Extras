@@ -36,9 +36,21 @@ The argument are:
   Go to mesh.fqdn.com > Add agent > Installation Executable Linux / BSD / macOS > **Select the good system type**
   Copy **ONLY** the URL with the quote.
   
+  ![Installation Executable Linux / BSD / macOS](https://github.com/bernardolankheet/TacticalRMM-Extras/assets/59538185/39764a76-b627-48f4-ae96-367e6462ad29)
+
+  Command: 
+  ```
+  wget -O meshagent "https://mesh.tacticalrmm.com/meshagents?id=Sg6IIzrfh5Vq%1567489321%406d&installflags=0&meshinstall=6""
+  ```
+
+  Copy **ONLY** the URL with the quote.
+  ```
+  https://mesh.tacticalrmm.com/meshagents?id=Sg6IIzrfh5Vq%1567489321%406d&installflags=0&meshinstall=6
+  ```
+  
 4. API URL
 
-  Your api URL for agent communication usually https://api.fqdn.com.
+  Your api URL for agent communication usually https://api.tacticalrmm.com
   
 5. Client ID
 
@@ -61,7 +73,7 @@ The argument are:
   
 ### Example
 ```bash
-./rmmagent-linux.sh install amd64 "https://mesh.fqdn.com/meshagents?id=XXXXX&installflags=X&meshinstall=X" "https://api.fqdn.com" 3 1 "XXXXX" server
+./rmmagent-linux.sh install amd64 "https://mesh.tacticalrmm.com/meshagents?id=XXXXX&installflags=X&meshinstall=X" "https://api.tacticalrmm.com" 3 1 "XXXXX" server
 ```
 
 ## Update
