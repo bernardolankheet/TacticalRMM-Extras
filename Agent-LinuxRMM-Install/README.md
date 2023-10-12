@@ -14,7 +14,7 @@ Download the script that match your configuration
 
 ### Tips
 
-Download script with this url: `https://raw.githubusercontent.com/netvolt/LinuxRMM-Script/main/rmmagent-linux.sh`
+Download script with this url: `https://raw.githubusercontent.com/bernardolankheet/TacticalRMM-Extras/main/Agent-LinuxRMM-Install/rmmagent-linux.sh`
 
 ## Install
 To install agent launch the script with this arguement:
