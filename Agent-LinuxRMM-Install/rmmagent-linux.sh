@@ -113,10 +113,10 @@ rmm_site_id=$6
 rmm_auth=$7
 rmm_agent_type=$8
 
-go_url_amd64="https://go.dev/dl/go1.18.linux-amd64.tar.gz"
-go_url_x86="https://go.dev/dl/go1.18.linux-386.tar.gz"
-go_url_arm64="https://go.dev/dl/go1.18.linux-arm64.tar.gz"
-go_url_armv6="https://go.dev/dl/go1.18.linux-armv6l.tar.gz"
+go_url_amd64="https://go.dev/dl/go1.20.linux-amd64.tar.gz"
+go_url_x86="https://go.dev/dl/go1.20.linux-386.tar.gz"
+go_url_arm64="https://go.dev/dl/go1.20.linux-arm64.tar.gz"
+go_url_armv6="https://go.dev/dl/go1.20.linux-armv6l.tar.gz"
 
 function go_install() {
         ## Installing golang
