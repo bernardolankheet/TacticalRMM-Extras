@@ -1,0 +1,923 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: bee49e8118ef49e781dbb1826223e8d7
+      template: 'Template Tactical RMM Monitoring'
+      name: 'Template Tactical RMM Monitoring'
+      description: |
+        Created Bernardo Lankheet
+        
+        Used to monitoting status to TacticalRMM.
+        
+        Readme on: https://github.com/bernardolankheet/TacticalRMM-Extras/Template-TRMM-for-Zabbix
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 003dc7ac692e4815be4ced30e33d65b4
+          name: 'TRMM Agent Count'
+          type: DEPENDENT
+          key: agent.count.trmm
+          delay: '0'
+          history: 90d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.agent_count
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: application'
+        - uuid: c29ae2bfffcf4c47abd0347f954aa945
+          name: 'TRMM Agent Version'
+          type: DEPENDENT
+          key: agent.version.trmm
+          delay: '0'
+          history: 90d
+          value_type: CHAR
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.latest_agent_version
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: application'
+          triggers:
+            - uuid: 026cc1bad6d54ddc986c409218e0e7c8
+              expression: 'last(/Template Tactical RMM Monitoring/agent.version.trmm,#1)<>last(/Template Tactical RMM Monitoring/agent.version.trmm,#2) and length(last(/Template Tactical RMM Monitoring/agent.version.trmm))>0'
+              name: 'TRMM: Agent Version has changed'
+              priority: INFO
+              description: 'Agent Tactical RMM version has changed. Ack to close.'
+              manual_close: 'YES'
+              tags:
+                - tag: Application
+                  value: TRMM
+                - tag: TRMM
+                  value: VERSION
+        - uuid: 8159e5a0c0c9482e98803f9a9c48bb4e
+          name: 'TRMM Health Status of the Celery Queue'
+          type: DEPENDENT
+          key: celery.queue.health.trmm
+          delay: '0'
+          history: 90d
+          description: 'Indicates if the NATS WebSocket service is responding.'
+          valuemap:
+            name: 'TRMM Celery Health Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.celery_queue_health
+            - type: STR_REPLACE
+              parameters:
+                - healthy
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - unhealthy
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+          triggers:
+            - uuid: 7d29c2e3beaf4c40a854a32bf599b207
+              expression: 'last(/Template Tactical RMM Monitoring/celery.queue.health.trmm)>=1'
+              name: 'TRMM: The Celery queue status is Unhealthy'
+              priority: HIGH
+              description: 'The health status of the Celery queue. Possible values are "healthy" or "unhealthy".'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: e8d372d6e56b439cb3870e4843c0254c
+          name: 'TRMM Health Status of the Celery Len'
+          type: DEPENDENT
+          key: celery.queue.len.trmm
+          delay: '0'
+          history: 90d
+          description: |
+            The current number of tasks in the Celery queue.
+            Note: a high number here (> 100) usually means your queue is stuck.
+            https://docs.tacticalrmm.com/troubleshooting/#celery-queue-stuck
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.celery_queue_len
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+          triggers:
+            - uuid: 8e098efdaedc4bf6b2162ae0b09d07f0
+              expression: 'last(/Template Tactical RMM Monitoring/celery.queue.len.trmm)>=100'
+              name: 'TRMM: The current number of tasks in the Celery queue >= 100'
+              priority: HIGH
+              description: |
+                The current number of tasks in the Celery queue. 
+                Note: a high number here (> 100) usually means your queue is stuck. 
+                https://docs.tacticalrmm.com/troubleshooting/#celery-queue-stuck
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 358e3b61691f401ba53889915cc38df2
+          name: 'TRMM Clients Count'
+          type: DEPENDENT
+          key: client.count.trmm
+          delay: '0'
+          history: 90d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.client_count
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: application'
+        - uuid: 25a4ea1ae80a4c5ab570ba1b73ee22b6
+          name: 'TRMM Day Cert Expire'
+          type: DEPENDENT
+          key: days.cert.expire.trmm
+          delay: '0'
+          history: 90d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.days_until_cert_expires
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: cert'
+          triggers:
+            - uuid: 632dd65cf4984805970a8cfec97f05d7
+              expression: 'last(/Template Tactical RMM Monitoring/days.cert.expire.trmm)<{$LLD_DAYS_EXPIRE}'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Template Tactical RMM Monitoring/days.cert.expire.trmm)>{$REC_LLD_DAYS_EXPIRE}'
+              name: 'TRMM: Certificate SSL is expiring ({ITEM.LASVALUE}<10)'
+              priority: HIGH
+              dependencies:
+                - name: 'TRMM: Expired SSL Certificate'
+                  expression: 'last(/Template Tactical RMM Monitoring/days.cert.status.trmm)=1'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 118e584522e340da8c2a9e612df12358
+          name: 'TRMM Cert Status'
+          type: DEPENDENT
+          key: days.cert.status.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Cert Expired Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.cert_expired
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: cert'
+          triggers:
+            - uuid: 78da8ff0ecc641c5ae37e640240d58bd
+              expression: 'last(/Template Tactical RMM Monitoring/days.cert.status.trmm)=1'
+              name: 'TRMM: Expired SSL Certificate'
+              priority: DISASTER
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: f3dfa9776dc4476999262018c908b88a
+          name: 'TRMM Disk Usage %'
+          type: DEPENDENT
+          key: disk.usage.trmm
+          delay: '0'
+          history: 90d
+          units: '%'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.disk_usage_percent
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: so'
+          triggers:
+            - uuid: 56b8847fa4fd4396a3b4e9fcdad5526c
+              expression: 'min(/Template Tactical RMM Monitoring/disk.usage.trmm,30m)>={$HIGH_DISK_UTIL}'
+              name: 'TRMM: Disk space is critically low'
+              priority: DISASTER
+              tags:
+                - tag: Application
+                  value: TRMM
+            - uuid: 60470da2eaf34b59ae41aefc7f617e7d
+              expression: 'min(/Template Tactical RMM Monitoring/disk.usage.trmm,30m)>={$LOW_DISK_UTIL}'
+              name: 'TRMM: Disk space is low'
+              priority: HIGH
+              dependencies:
+                - name: 'TRMM: Disk space is critically low'
+                  expression: 'min(/Template Tactical RMM Monitoring/disk.usage.trmm,30m)>={$HIGH_DISK_UTIL}'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 2ce57a43149a485fbb6ef287eae7974a
+          name: 'TRMM Agent: Latest Version'
+          type: DEPENDENT
+          key: github.rmmagent.latestversion
+          delay: '0'
+          history: 90d
+          value_type: CHAR
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.tag_name
+            - type: TRIM
+              parameters:
+                - v
+          master_item:
+            key: rawdata.rmmagent.github
+          tags:
+            - tag: Application
+              value: 'component: latestversion'
+          triggers:
+            - uuid: 42cd8a6acdb74018847f7f0bced19578
+              expression: '(last(/Template Tactical RMM Monitoring/github.rmmagent.latestversion,#1)<>last(/Template Tactical RMM Monitoring/github.rmmagent.latestversion,#2))=1 and length(last(/Template Tactical RMM Monitoring/github.rmmagent.latestversion))>0'
+              name: 'New version available of TRMM Agent'
+              opdata: 'New version: {Template Tactical RMM Monitoring:agent.version.trmm.last()}, installed version: {Template Tactical RMM Monitoring:github.rmmagent.latestversion.last()}'
+              priority: INFO
+              description: 'Ack to close.'
+              manual_close: 'YES'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 9549ff5b941d47739ad317ae9e617a83
+          name: 'TRMM: Latest Version'
+          type: DEPENDENT
+          key: github.trmm.latestversion
+          delay: '0'
+          history: 90d
+          value_type: CHAR
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.tag_name
+            - type: TRIM
+              parameters:
+                - v
+          master_item:
+            key: rawdata.rmm.github
+          tags:
+            - tag: Application
+              value: 'component: latestversion'
+        - uuid: 196129564b854e4d91ec92bb13ec5200
+          name: 'TRMM Mem Usage %'
+          type: DEPENDENT
+          key: mem.usage.trmm
+          delay: '0'
+          history: 90d
+          units: '%'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.mem_usage_percent
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: so'
+          triggers:
+            - uuid: 6b45c0e4e2ef400ea57bbdd85228dad4
+              expression: 'last(/Template Tactical RMM Monitoring/mem.usage.trmm)>={$HIGH_MEMORY_UTIL}'
+              name: 'TRMM: High memory utilization'
+              priority: INFO
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: d8abc4488bdf4c3f958aac3f7582127e
+          name: 'TRMM Mesh Ping'
+          type: DEPENDENT
+          key: mesh.ping.trmm
+          delay: '0'
+          history: 90d
+          description: 'Indicates if the NATS standard service is responding.'
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.mesh_ping
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+          triggers:
+            - uuid: 3673ed0f745f4ad494786f8d495505df
+              expression: 'max(/Template Tactical RMM Monitoring/mesh.ping.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Mesh is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 77b591f60ab64b34ad81bf3e70c47e8c
+          name: 'TRMM Nat Standard Service Ping'
+          type: DEPENDENT
+          key: nats.std.ping.trmm
+          delay: '0'
+          history: 90d
+          description: 'Indicates if the NATS standard service is responding.'
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.nats_std_ping
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+          triggers:
+            - uuid: 8bbb189cf5694551b500f90be34da0ef
+              expression: 'last(/Template Tactical RMM Monitoring/nats.std.ping.trmm)>=1'
+              name: 'TRMM: NATS standard service is not responding'
+              priority: HIGH
+              description: 'Indicates if the NATS standard service is responding.'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 423da83b761044e295b4e8ef7cbac6e9
+          name: 'TRMM Nat WebSocket Ping'
+          type: DEPENDENT
+          key: nats.ws.ping.trmm
+          delay: '0'
+          history: 90d
+          description: 'Indicates if the NATS WebSocket service is responding.'
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.nats_ws_ping
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+          triggers:
+            - uuid: cfa0abda2eae424581ed56db2c0d8fa2
+              expression: 'last(/Template Tactical RMM Monitoring/nats.ws.ping.trmm)>=1'
+              name: 'TRMM: NATS WebSocket service is not responding'
+              priority: HIGH
+              description: 'Indicates if the NATS WebSocket service is responding.'
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 6ba874ad54544d1196aa548d515a412e
+          name: RawData-TRMMGitHub
+          type: HTTP_AGENT
+          key: rawdata.rmm.github
+          delay: 5h
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 30s
+          url: 'https://api.github.com/repos/{$GITHUB_TRMM_USER_REPO}/releases/latest'
+          status_codes: '200,404,304'
+          headers:
+            - name: User-Agent
+              value: Zabbix
+          tags:
+            - tag: Application
+              value: RawData
+        - uuid: 812a23bcf5de47d885775cee1a3ab43e
+          name: RawData
+          type: HTTP_AGENT
+          key: rawdata.rmm.mon
+          delay: 5m
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 30s
+          url: '{$HTTP}://{$RMM_API_URL}/core/v2/status/'
+          headers:
+            - name: Content-Type
+              value: application/json
+            - name: X-Mon-Token
+              value: '{$API_KEY}'
+          tags:
+            - tag: Application
+              value: RawData
+          triggers:
+            - uuid: 3bbc9f34b52e4445ad45c67346fa9160
+              expression: 'nodata(/Template Tactical RMM Monitoring/rawdata.rmm.mon,{$TIME_API_DOWN})=0'
+              name: 'TRMM: API or WebService Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 0931840b01df42879dba3b7bd84d83b3
+          name: RawData-RMMAgentGitHub
+          type: HTTP_AGENT
+          key: rawdata.rmmagent.github
+          delay: 5h
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          timeout: 30s
+          url: 'https://api.github.com/repos/{$GITHUB_RMMAGENT_USER_REPO}/releases/latest'
+          status_codes: '200,404,304'
+          headers:
+            - name: User-Agent
+              value: Zabbix
+          tags:
+            - tag: Application
+              value: RawData
+        - uuid: 89fcc8655a2740f986116c7c035ecd92
+          name: 'TRMM Redis Ping'
+          type: DEPENDENT
+          key: redis.ping.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.redis_ping
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: ping'
+        - uuid: 571a00804ad948fd915bb36f4d58eeee
+          name: 'TRMM Service Celery'
+          type: DEPENDENT
+          key: service.celery.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''celery'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 91f53e4d7bd54f8b87d83b74ccaca8ad
+              expression: 'max(/Template Tactical RMM Monitoring/service.celery.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service Celery is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 1b67971db1c24e2aab7733c845e789e7
+          name: 'TRMM Service Celerybeat'
+          type: DEPENDENT
+          key: service.celerybeat.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''celerybeat'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 6349e6013f4d481999f6a905604ad4ef
+              expression: 'max(/Template Tactical RMM Monitoring/service.celerybeat.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service CeleryBeat is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: fb8999cf1333494482d45b9fca5a43dc
+          name: 'TRMM Service Daphne'
+          type: DEPENDENT
+          key: service.daphne.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''daphne'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 1d882dbffa9f484582891948c07b0b6f
+              expression: 'max(/Template Tactical RMM Monitoring/service.daphne.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service Daphne is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 5ba34b1f2c364bd7bd3d425666283c5d
+          name: 'TRMM Service Mesh'
+          type: DEPENDENT
+          key: service.mesh.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''mesh'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 78b51b12c3bc4678a41d4bc1f2c59a63
+              expression: 'max(/Template Tactical RMM Monitoring/service.mesh.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Mesh is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 39081a3992bc4311a639c71b6bc68e65
+          name: 'TRMM Service Nats-API'
+          type: DEPENDENT
+          key: service.nats.api.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''nats-api'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: e621922066744fe295c0ce24501aa9ce
+              expression: 'max(/Template Tactical RMM Monitoring/service.nats.api.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service NATS-API is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 0985b0a4688446008ec47bb043af2cd8
+          name: 'TRMM Service Nats'
+          type: DEPENDENT
+          key: service.nats.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''nats'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 6c28023978d642c6a23b2e2cc872018e
+              expression: 'max(/Template Tactical RMM Monitoring/service.nats.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service NATS is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 07644fce7075469b8ca41389d9536f34
+          name: 'TRMM Service Redis'
+          type: DEPENDENT
+          key: service.redis.trmm
+          delay: '0'
+          history: 90d
+          valuemap:
+            name: 'TRMM Service Status'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.services_running.[''redis'']'
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - '0'
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - '1'
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: services'
+          triggers:
+            - uuid: 8022f1f2002140b49330e5446b7d293c
+              expression: 'max(/Template Tactical RMM Monitoring/service.redis.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Redis is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+            - uuid: 2f217f3ce07c47d9a1662755dc867416
+              expression: 'max(/Template Tactical RMM Monitoring/service.redis.trmm,{$TIME_SERVICES_DOWN})=1'
+              name: 'TRMM: Service Redis is Down'
+              priority: AVERAGE
+              tags:
+                - tag: Application
+                  value: TRMM
+        - uuid: 92d5486a82be41fe997d2ee746bf4640
+          name: 'TRMM Site Count'
+          type: DEPENDENT
+          key: site.count.trmm
+          delay: '0'
+          history: 90d
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.site_count
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: application'
+        - uuid: 74ffbd2937634403a3a668e779805859
+          name: 'TRMM Version'
+          type: DEPENDENT
+          key: version.trmm
+          delay: '0'
+          history: 90d
+          value_type: CHAR
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.version
+          master_item:
+            key: rawdata.rmm.mon
+          tags:
+            - tag: Application
+              value: 'component: application'
+          triggers:
+            - uuid: f6d45ea2f56344fdba7f86ddbf42f900
+              expression: 'last(/Template Tactical RMM Monitoring/version.trmm,#1)<>last(/Template Tactical RMM Monitoring/version.trmm,#2) and length(last(/Template Tactical RMM Monitoring/version.trmm))>0'
+              name: 'TRMM: Version has changed'
+              priority: INFO
+              description: 'Tactical RMM version has changed. Ack to close.'
+              manual_close: 'YES'
+              tags:
+                - tag: Application
+                  value: TRMM
+                - tag: TRMM
+                  value: VERSION
+      macros:
+        - macro: '{$API_KEY}'
+          type: SECRET_TEXT
+        - macro: '{$GITHUB_RMMAGENT_USER_REPO}'
+          value: amidaware/rmmagent
+        - macro: '{$GITHUB_TRMM_USER_REPO}'
+          value: amidaware/tacticalrmm
+        - macro: '{$HIGH_DISK_UTIL}'
+          value: '96'
+        - macro: '{$HIGH_MEMORY_UTIL}'
+          value: '97'
+        - macro: '{$HTTP}'
+          value: https
+        - macro: '{$LLD_DAYS_EXPIRE}'
+          value: '10'
+        - macro: '{$LOW_DISK_UTIL}'
+          value: '93'
+        - macro: '{$REC_LLD_DAYS_EXPIRE}'
+          value: '30'
+        - macro: '{$RMM_API_URL}'
+          value: api.tacticalrmm.com
+        - macro: '{$TIME_API_DOWN}'
+          value: 10m
+        - macro: '{$TIME_SERVICES_DOWN}'
+          value: 15m
+      valuemaps:
+        - uuid: a7128ecf72ba4e8c8a2928c1d32436a8
+          name: 'TRMM Celery Health Status'
+          mappings:
+            - value: '0'
+              newvalue: healthy
+            - value: '1'
+              newvalue: unhealthy
+        - uuid: c604b33f5736451da04b4ff1036745ff
+          name: 'TRMM Cert Expired Status'
+          mappings:
+            - value: '0'
+              newvalue: OK
+            - value: '1'
+              newvalue: Expired
+        - uuid: 904e4bd4f001429499e1cce15ef9ebd4
+          name: 'TRMM Service Status'
+          mappings:
+            - value: '0'
+              newvalue: Running
+            - value: '1'
+              newvalue: Stopped
+  triggers:
+    - uuid: 910d3939b3044a1a9bba2cb42e4a37ce
+      expression: '(last(/Template Tactical RMM Monitoring/version.trmm,#1)<>last(/Template Tactical RMM Monitoring/version.trmm,#2))=1 and length(last(/Template Tactical RMM Monitoring/github.trmm.latestversion))>0'
+      name: 'New version available of TRMM'
+      opdata: 'New version: {Template Tactical RMM Monitoring:version.trmm.last()}, installed version: {Template Tactical RMM Monitoring:github.trmm.latestversion.last()}'
+      priority: INFO
+      description: 'Ack to close.'
+      manual_close: 'YES'
+      tags:
+        - tag: Application
+          value: TRMM
+  graphs:
+    - uuid: 7fa5098ef2794ab1b0a76b56d2b30000
+      name: 'Agent Count'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: agent.count.trmm
+    - uuid: 3bf8161f9bcd4d5fa3c372a4e6d6a8c4
+      name: 'Clients Count'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: client.count.trmm
+    - uuid: bca8d1559a2f448cbce29a1a6fe4d880
+      name: 'Disk-Mem Usage %'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: disk.usage.trmm
+        - sortorder: '2'
+          color: F63100
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: mem.usage.trmm
+    - uuid: 733b570af2b94075a569e29324f13078
+      name: 'Services Status'
+      yaxismax: '2'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.celery.trmm
+        - sortorder: '2'
+          color: F63100
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.celerybeat.trmm
+        - sortorder: '3'
+          color: 2774A4
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.daphne.trmm
+        - sortorder: '5'
+          color: FC6EA3
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.mesh.trmm
+        - sortorder: '7'
+          color: AC8C14
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.nats.trmm
+        - sortorder: '8'
+          color: 611F27
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.nats.api.trmm
+        - sortorder: '11'
+          color: BB2A02
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: service.redis.trmm
+    - uuid: a38fa7b247b14f5c87a0beb907406b71
+      name: 'Site Count'
+      graph_items:
+        - sortorder: '1'
+          color: 1A7C11
+          item:
+            host: 'Template Tactical RMM Monitoring'
+            key: site.count.trmm

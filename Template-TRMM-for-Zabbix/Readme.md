@@ -12,7 +12,7 @@ Description EN: Collect Status Metrics on TacticalRMM .
 
 [TacticalRMM Doc](https://docs.tacticalrmm.com/tipsntricks/#monitor-your-trmm-instance-via-the-built-in-monitoring-endpoint)
 
-### Monitor your TRMM Instance via the Built-in Monitoring Endpoint.
+### Monitor your TRMM Instance version < v0.20.1 via the Built-in Monitoring Endpoint.
 Generate a random string to be used as a token and append it to the bottom of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` like this:
 
 ```python
@@ -30,7 +30,6 @@ Example using curl:
 ```
 curl -X POST https://api.yourdomain.com/core/status/ -d '{"auth": "SuperSekretToken123456"}' -H 'Content-Type: application/json'
 ```
-
 Response will look something like this:
 ```json
 {
@@ -58,13 +57,65 @@ Response will look something like this:
 }
 ```
 
+### Monitor your TRMM Instance version > v1.0.0 via the Built-in Monitoring Endpoint.
+Generate a random string to be used as a token and append it to the bottom of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` like this:
+
+```python
+MON_TOKEN = "SuperSekretToken123456"
+```
+
+Then restart Django to activate the endpoint with `sudo systemctl restart rmm.service`
+
+Send a GET request to https://api.yourdomain.com/core/v2/status/ with the X-Mon-Token header.
+```
+X-Mon-Token: SuperSekretToken123456
+```
+
+Example using curl:
+```
+curl -H "X-Mon-Token: SuperSekretToken123456" https://api.yourdomain.com/core/v2/status/
+```
+Response will look something like this:
+```json
+{
+    "version": "1.0.0",
+    "latest_agent_version": "2.8.0",
+    "agent_count": 345,
+    "client_count": 14,
+    "site_count":34,
+    "disk_usage_percent": 43,
+    "mem_usage_percent": 54,
+    "days_until_cert_expires": 43,
+    "cert_expired": false,
+    "redis_ping": true,
+    "celery_queue_len": 0,
+    "celery_queue_health": "healthy",
+    "nats_std_ping": true,
+    "nats_ws_ping": true,
+    "mesh_ping": true,
+    "services_running": {
+        "mesh": true,
+        "daphne": true,
+        "celery": true,
+        "celerybeat": true,
+        "redis": true,
+        "nats": true,
+        "nats-api": true
+    }
+}
+```
+
 ## Zabbix: Instructions
-Tested on Zabbix 5.0. 
+Tested on Zabbix 5.0 and 7.0
 
 Template Macros:
 ![Template Macros](./img/macros.jpg)
 
-1. [download](./Template-Tactical-RMM-Monitoring.xml) and import template to zabbix server (Configuration-->Templates-->Import)
+1. [download](./Template-Tactical-RMM-Monitoring.xml) Zabbix 5.0 and import template to zabbix server (Configuration-->Templates-->Import)
+
+or
+
+[download](./Template-Tactical-RMM-Monitoring-v1-0-0.xml) Zabbix 7.0 and TMM V.1.0.0
 
 2. link template to validator host
 
