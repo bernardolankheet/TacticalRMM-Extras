@@ -1,3 +1,4 @@
+#!/bin/bash
 # EX: Install
 #         ./rmmagent-linux.sh install amd64 "https://mesh.rmmtactical.com/meshagents?id=Sd7iQrSbDd%245o2464351FsR6m%24nh3K1D7lnwJWIBn35ad8%40JtRgiyNlvjVACQ%40ebLT5ExtT&installflags=0&meshinstall=6" "https://api.rmmtactical.com" 1 53 "b121c34d2737678e80b10613895f25e17de32493cbb0b19e412315700df6410218ef4" server --insecure
 # EX: UPDATE 
