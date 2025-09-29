@@ -1,5 +1,6 @@
+#!/bin/bash
 # EX: Install
-#         ./rmmagent-linux.sh install amd64 "https://mesh.rmmtactical.com/meshagents?id=Sd7iQrSbDd%245o2464351FsR6m%24nh3K1D7lnwJWIBn35ad8%40JtRgiyNlvjVACQ%40ebLT5ExtT&installflags=0&meshinstall=6" "https://api.rmmtactical.com" 1 53 "b121c34d2737678e80b10613895f25e17de32493cbb0b19e412315700df6410218ef4" server
+#         ./rmmagent-linux.sh install amd64 "https://mesh.rmmtactical.com/meshagents?id=Sd7iQrSbDd%245o2464351FsR6m%24nh3K1D7lnwJWIBn35ad8%40JtRgiyNlvjVACQ%40ebLT5ExtT&installflags=0&meshinstall=6" "https://api.rmmtactical.com" 1 53 "b121c34d2737678e80b10613895f25e17de32493cbb0b19e412315700df6410218ef4" server --insecure
 # EX: UPDATE 
 #       ./rmmagent-linux.sh amd64 update
 #!/bin/bash
@@ -28,6 +29,7 @@ if [[ $1 == "help" ]]; then
         echo "Arg 7: Auth Key"
         echo "Arg 8: Agent Type 'server' or 'workstation'"
         echo ""
+        echo "Optional Arg: '--insecure' to run the tacticalagent service with the insecure flag"
         echo "Only argument 1 is needed for update"
         exit 0
 fi
@@ -113,6 +115,23 @@ rmm_site_id=$6
 rmm_auth=$7
 rmm_agent_type=$8
 
+agent_service_args="-m svc"
+agent_install_insecure="false"
+mesh_wget_flags=()
+
+if [[ $1 == "install" ]]; then
+        insecure_option=${9:-}
+
+        if [[ $insecure_option == "--insecure" ]]; then
+                agent_service_args="-insecure -m svc"
+                agent_install_insecure="true"
+                mesh_wget_flags+=('--no-check-certificate')
+        elif [[ $insecure_option != "" ]]; then
+                echo "Unknown optional argument '$insecure_option'"
+                exit 1
+        fi
+fi
+
 go_url_amd64="https://go.dev/dl/go1.20.linux-amd64.tar.gz"
 go_url_x86="https://go.dev/dl/go1.20.linux-386.tar.gz"
 go_url_arm64="https://go.dev/dl/go1.20.linux-arm64.tar.gz"
@@ -181,15 +200,25 @@ function update_agent() {
 }
 function install_agent() {
         cp /tmp/temp_rmmagent /usr/local/bin/rmmagent
-        /tmp/temp_rmmagent -m install -api $rmm_url -client-id $rmm_client_id -site-id $rmm_site_id -agent-type $rmm_agent_type -auth $rmm_auth
+
+        local -a install_cmd=(/tmp/temp_rmmagent)
+
+        if [[ $agent_install_insecure == "true" ]]; then
+                install_cmd+=(-insecure)
+        fi
+
+        install_cmd+=(-m install -api "$rmm_url" -client-id "$rmm_client_id" -site-id "$rmm_site_id" -agent-type "$rmm_agent_type" -auth "$rmm_auth")
+
+        "${install_cmd[@]}"
+
         rm /tmp/temp_rmmagent
 
-        cat << "EOF" > /etc/systemd/system/tacticalagent.service
+        cat <<EOF > /etc/systemd/system/tacticalagent.service
 [Unit]
 Description=Tactical RMM Linux Agent
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/rmmagent -m svc
+ExecStart=/usr/local/bin/rmmagent $agent_service_args
 User=root
 Group=root
 Restart=always
@@ -207,12 +236,12 @@ EOF
 
 function install_mesh() {
   ## Installing mesh agent
-  wget -O /tmp/meshagent $mesh_url
+  wget "${mesh_wget_flags[@]}" -O /tmp/meshagent "$mesh_url"
   chmod +x /tmp/meshagent
-  mkdir /opt/tacticalmesh
+  mkdir -p /opt/tacticalmesh
   /tmp/meshagent -install --installPath="/opt/tacticalmesh"
   rm /tmp/meshagent
-  rm /tmp/meshagent.msh
+  rm -f /tmp/meshagent.msh
 }
 
 case $1 in

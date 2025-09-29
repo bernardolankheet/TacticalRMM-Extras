@@ -70,6 +70,10 @@ The argument are:
 8. Agent Type
 
   Can be *server* or *workstation* and define the type of agent.
+
+9. Insecure
+
+  Optional argument, if you have a self-signed certificate on your api url add `--insecure` as argument to avoid certificate error.
   
 ### Example
 ```bash
